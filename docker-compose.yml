@@ -1,0 +1,33 @@
+
+version: "3.8"
+
+services:
+  # Trường hợp bạn KHÔNG dùng MySQL cài trên máy, mà tạo MySQL trong container, API sẽ gửi dữ liệu vào container này
+  # Lưu ý: Vì bạn tạo MySQL trong một container mới nên ban đầu sẽ KHÔNG CÓ dữ liệu nào trong MySQL
+  mysql:
+    image: mysql:8.0
+    container_name: mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: root_pass
+      MYSQL_DATABASE: db_name
+    ports:
+      - "3306:3306"   # Không được thay đổi cổng 3306 của container (3306 bên phải)
+                      # Và tốt nhất nên giữ nguyên 3306:3306 nếu MySQL trên host chạy cổng mặc định 3306
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      retries: 5
+
+  fastapi:
+    build: .
+    container_name: fastapi
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: "mysql+pymysql://root:root_pass@mysql/db_name"
+      
+    ports:
+      - "8000:8000"
+
+
